@@ -1,15 +1,18 @@
 # Metabolic Syndrome Analysis Project
 # Authors: Maria Eva Mellor Ortiz & Diana Mihaela Pal Japa
-
+# %%
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
-# Question 1: How many patients have metabolic syndrome in the dataset?
+#  Question 1: How many patients have metabolic syndrome in the dataset?
 df = pd.read_csv("metabolic_syndrome.txt")
 
+print("\n--- Question 1: Metabolic Syndrome Counts ---")
 print(df["MetabolicSyndrome"].value_counts())
+print("\nProportions (%):")
 print(df["MetabolicSyndrome"].value_counts(normalize=True) * 100)
 
 # Plotting the results
@@ -21,8 +24,7 @@ plt.ylabel("Number of Patients")
 plt.xticks(ticks=[0, 1], labels=['No', 'Yes'], rotation=0)
 plt.show()
 
-# Question 2: How are the different variables (age, gender, etc.) distributed?
-import os
+# %% Question 2: How are the different variables (age, gender, etc.) distributed?
 
 # create folder to save figures
 fig_dir = "figures"
@@ -102,3 +104,59 @@ for col in categorical_cols:
     plt.show()
 
 print("\nFinished Question 2: numeric summary saved as summary_statistics_numeric.csv, figures saved in 'figures/'")
+
+# %% Question 3: How do the different variables interact? 
+# Are the biological variables similarly distributed in the different gender group?
+# What correlations exist between the biological variables?
+
+print("\n--- Question 3: Variable Interactions ---")
+bio_vars = ["WaistCirc", "BMI", "UrAlbCr", "UricAcid",
+            "BloodGlucose", "HDL", "Triglycerides"
+            ]
+
+print("\n--- Interaction: Biological Variables by Sex ---")
+print(df.groupby("Sex")[bio_vars].describe().transpose())
+
+# Boxplots
+for var in bio_vars:
+    plt.figure(figsize=(8, 5))
+    sns.boxplot(data=df, x="Sex", y=var)
+    plt.title(f"{var} by Sex")
+    plt.xlabel("Sex")
+    plt.ylabel(var)
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"box_{var}_by_Sex.png"))
+    plt.show()
+
+
+print("\n--- Correlation Matrix of Biological Variables ---")
+corr_matrix = df[bio_vars].corr()
+print(corr_matrix)
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm")
+plt.title("Correlation Matrix of Biological Variables")
+plt.tight_layout()
+plt.savefig(os.path.join(fig_dir, "correlation_matrix_biological_vars.png"))
+plt.show()
+
+# %% Additional analysis: Differences between patients with and without metabolic syndrome.
+print("\n--- Biological Variables by Metabolic Syndrome Status ---")
+print(df.groupby("MetabolicSyndrome")[bio_vars].describe().transpose())
+
+for var in bio_vars:
+    plt.figure(figsize=(8, 5))
+    sns.boxplot(data=df, x="MetabolicSyndrome", y=var)
+    plt.title(f"{var} by Metabolic Syndrome Status")
+    plt.xlabel("Metabolic Syndrome Status")
+    plt.ylabel(var)
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"box_{var}_by_MetabolicSyndrome.png"))
+    plt.show()
+
+print("\nFinished Question 3: interaction plots saved in 'figures/'")
+
+# %% Question 4: What factor is the most linked to metabolic syndrome?
+print("\n--- Question 4: Factors Linked to Metabolic Syndrome ---")
+
+
+# %%
