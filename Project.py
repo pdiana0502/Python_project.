@@ -6,8 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from scipy.stats import chi2_contingency
 
 #  Question 1: How many patients have metabolic syndrome in the dataset?
+# Load the dataset
 df = pd.read_csv("metabolic_syndrome.txt")
 
 print("\n--- Question 1: Metabolic Syndrome Counts ---")
@@ -16,12 +18,13 @@ print("\nProportions (%):")
 print(df["MetabolicSyndrome"].value_counts(normalize=True) * 100)
 
 # Plotting the results
-plt.figure(figsize=(8, 6))
-df["MetabolicSyndrome"].value_counts().plot(kind='bar', color=['skyblue', 'salmon'])
+plt.figure(figsize=(8, 5))
+df["MetabolicSyndrome"].value_counts().plot(kind="bar", color=["skyblue", "salmon"])
 plt.title("Number of Patients with Metabolic Syndrome")
 plt.xlabel("Metabolic Syndrome Status")
 plt.ylabel("Number of Patients")
 plt.xticks(ticks=[0, 1], labels=['No', 'Yes'], rotation=0)
+plt.tight_layout()
 plt.show()
 
 # %% Question 2: How are the different variables (age, gender, etc.) distributed?
@@ -65,7 +68,7 @@ for c in categorical_cols:
     print(counts)
     print((props).round(2))
     cat_summary[c] = pd.concat([counts, props.round(2)], axis=1).rename(columns={c: "count", 0: "proportion(%)"})
-# Optionally save categorical summaries
+
 # Convert to one CSV per categorical column
 for c in categorical_cols:
     cat_summary[c].to_csv(f"summary_{c}.csv")
@@ -73,7 +76,18 @@ for c in categorical_cols:
 # Plot: histograms + KDE for numeric columns
 for col in numeric_cols:
     plt.figure(figsize=(8, 5))
-    sns.histplot(df_plot[col].dropna(), kde=True, bins=25)
+    sns.kdeplot(
+        df_plot[col].dropna(),
+        color="red",
+        linewidth=2
+    )
+    sns.histplot(
+        df_plot[col].dropna(),
+        bins=25,
+        color="skyblue",
+        stat="density",
+        alpha=0.6
+    )
     plt.title(f"Distribution of {col}")
     plt.xlabel(col)
     plt.ylabel("Frequency")
@@ -84,7 +98,7 @@ for col in numeric_cols:
 # Plot: boxplots for numeric columns
 for col in numeric_cols:
     plt.figure(figsize=(8, 4))
-    sns.boxplot(x=df_plot[col].dropna())
+    sns.boxplot(x=df_plot[col].dropna(), color="skyblue")
     plt.title(f"Boxplot of {col}")
     plt.xlabel(col)
     plt.tight_layout()
@@ -93,12 +107,12 @@ for col in numeric_cols:
 
 # Plot: countplots for categorical columns
 for col in categorical_cols:
-    plt.figure(figsize=(7, 4))
-    sns.countplot(x=df_plot[col])
+    plt.figure(figsize=(8, 5))
+    sns.countplot(x=df_plot[col], color="skyblue")
     plt.title(f"Distribution of {col}")
     plt.xlabel(col)
     plt.ylabel("Count")
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=0)
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, f"count_{col}.png"))
     plt.show()
@@ -107,7 +121,6 @@ print("\nFinished Question 2: numeric summary saved as summary_statistics_numeri
 
 # %% Question 3: How do the different variables interact? 
 # Are the biological variables similarly distributed in the different gender group?
-# What correlations exist between the biological variables?
 
 print("\n--- Question 3: Variable Interactions ---")
 bio_vars = ["WaistCirc", "BMI", "UrAlbCr", "UricAcid",
@@ -120,7 +133,7 @@ print(df.groupby("Sex")[bio_vars].describe().transpose())
 # Boxplots
 for var in bio_vars:
     plt.figure(figsize=(8, 5))
-    sns.boxplot(data=df, x="Sex", y=var)
+    sns.boxplot(data=df, x="Sex", y=var, color="skyblue")
     plt.title(f"{var} by Sex")
     plt.xlabel("Sex")
     plt.ylabel(var)
@@ -128,7 +141,7 @@ for var in bio_vars:
     plt.savefig(os.path.join(fig_dir, f"box_{var}_by_Sex.png"))
     plt.show()
 
-
+# What correlations exist between the biological variables?
 print("\n--- Correlation Matrix of Biological Variables ---")
 corr_matrix = df[bio_vars].corr()
 print(corr_matrix)
@@ -145,7 +158,7 @@ print(df.groupby("MetabolicSyndrome")[bio_vars].describe().transpose())
 
 for var in bio_vars:
     plt.figure(figsize=(8, 5))
-    sns.boxplot(data=df, x="MetabolicSyndrome", y=var)
+    sns.boxplot(data=df, x="MetabolicSyndrome", y=var, color="skyblue")
     plt.title(f"{var} by Metabolic Syndrome Status")
     plt.xlabel("Metabolic Syndrome Status")
     plt.ylabel(var)
@@ -157,17 +170,13 @@ print("\nFinished Question 3: interaction plots saved in 'figures/'")
 
 # %% Question 4: What factor is the most linked to metabolic syndrome?
 print("\n--- Question 4: Factors Linked to Metabolic Syndrome ---")
+# We will analyze both numeric and categorical variables to see which ones are most strongly associated with metabolic syndrome.
+# 1) Numeric variables: we calculate mean difference between groups.
 
-# Separate numeric and categorical variables
-numeric_cols = ["Age", "WaistCirc", "BMI", "UrAlbCr", "UricAcid",
-                "BloodGlucose", "HDL", "Triglycerides"]
-categorical_cols = ["Sex", "Marital", "Income", "Race", "Albuminuria"]
-
-# 1) Numeric variables: calculate mean difference between groups 
 numeric_effects = {}
 for col in numeric_cols:
     means = df.groupby("MetabolicSyndrome")[col].mean()
-    diff = abs(means[1] - means[0])
+    diff = abs(means.iloc[1] - means.iloc[0])
     numeric_effects[col] = diff
 
 # Sort numeric variables by difference
@@ -179,7 +188,7 @@ for col, diff in numeric_effects.items():
 # Plot numeric variables
 for col in numeric_cols:
     plt.figure(figsize=(8, 5))
-    sns.boxplot(data=df, x="MetabolicSyndrome", y=col)
+    sns.boxplot(data=df, x="MetabolicSyndrome", y=col, color="skyblue")
     plt.title(f"{col} by Metabolic Syndrome Status")
     plt.xlabel("Metabolic Syndrome Status")
     plt.ylabel(col)
@@ -188,7 +197,6 @@ for col in numeric_cols:
     plt.show()
 
 # 2) Categorical variables: chi-square to see strongest association 
-from scipy.stats import chi2_contingency
 
 cat_effects = {}
 for col in categorical_cols:
@@ -206,7 +214,7 @@ for col, chi2_val in cat_effects.items():
 for col in categorical_cols:
     plt.figure(figsize=(8, 5))
     counts = pd.crosstab(df[col], df["MetabolicSyndrome"])
-    counts.plot(kind='bar', stacked=True, figsize=(8,5))
+    counts.plot(kind="bar", stacked=True, figsize=(8,5), color=["skyblue", "salmon"])
     plt.title(f"{col} by Metabolic Syndrome Status")
     plt.xlabel(col)
     plt.ylabel("Count")
@@ -229,35 +237,34 @@ print("\n--- Question 5: Predicting Metabolic Syndrome ---")
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.preprocessing import LabelEncoder
 
 # Separate features and target
 X = df.drop(columns=["MetabolicSyndrome"])
-y = df["MetabolicSyndrome"]
+Y = df["MetabolicSyndrome"]
 
 # Encode categorical variables
 X = pd.get_dummies(X, drop_first=True)
 
 # Split data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
 
 # Train a simple Random Forest classifier
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+model = RandomForestClassifier(n_estimators=200, random_state=42)
+model.fit(X_train, Y_train)
 
 # Predictions
-y_pred = model.predict(X_test)
+Y_pred = model.predict(X_test)
 
 # Evaluation of the model
 print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
+print(classification_report(Y_test, Y_pred))
 
 print("\nConfusion Matrix:")
-print(confusion_matrix(y_test, y_pred))
+print(confusion_matrix(Y_test, Y_pred))
 
 # Plot top 10 features by importance
 feat_importances = pd.Series(model.feature_importances_, index=X.columns)
-feat_importances.sort_values(ascending=False).head(10).plot(kind='barh', figsize=(8, 5), color='skyblue')
+feat_importances.sort_values(ascending=False).head(10).plot(kind="barh", figsize=(8, 5), color="skyblue")
 plt.title("Top 10 Features by Importance")
 plt.xlabel("Importance")
 plt.ylabel("Feature")
@@ -266,3 +273,4 @@ plt.savefig(os.path.join(fig_dir, "feature_importance.png"))
 plt.show()
 
 print("\nFinished Question 5: prediction model evaluated and feature importance plot saved in 'figures/'.")
+print("\n--- End of Analysis ---")
