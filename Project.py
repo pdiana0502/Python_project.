@@ -158,5 +158,111 @@ print("\nFinished Question 3: interaction plots saved in 'figures/'")
 # %% Question 4: What factor is the most linked to metabolic syndrome?
 print("\n--- Question 4: Factors Linked to Metabolic Syndrome ---")
 
+# Separate numeric and categorical variables
+numeric_cols = ["Age", "WaistCirc", "BMI", "UrAlbCr", "UricAcid",
+                "BloodGlucose", "HDL", "Triglycerides"]
+categorical_cols = ["Sex", "Marital", "Income", "Race", "Albuminuria"]
 
-# %%
+# 1) Numeric variables: calculate mean difference between groups 
+numeric_effects = {}
+for col in numeric_cols:
+    means = df.groupby("MetabolicSyndrome")[col].mean()
+    diff = abs(means[1] - means[0])
+    numeric_effects[col] = diff
+
+# Sort numeric variables by difference
+numeric_effects = dict(sorted(numeric_effects.items(), key=lambda item: item[1], reverse=True))
+print("\nNumeric variables sorted by difference between MetSyn groups:")
+for col, diff in numeric_effects.items():
+    print(f"{col}: Mean difference = {diff:.2f}")
+
+# Plot numeric variables
+for col in numeric_cols:
+    plt.figure(figsize=(8, 5))
+    sns.boxplot(data=df, x="MetabolicSyndrome", y=col)
+    plt.title(f"{col} by Metabolic Syndrome Status")
+    plt.xlabel("Metabolic Syndrome Status")
+    plt.ylabel(col)
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"box_{col}_by_MetabolicSyndrome.png"))
+    plt.show()
+
+# 2) Categorical variables: chi-square to see strongest association 
+from scipy.stats import chi2_contingency
+
+cat_effects = {}
+for col in categorical_cols:
+    contingency = pd.crosstab(df[col], df["MetabolicSyndrome"])
+    chi2, p, dof, expected = chi2_contingency(contingency)
+    cat_effects[col] = chi2
+
+# Sort categorical variables by chi-square value
+cat_effects = dict(sorted(cat_effects.items(), key=lambda item: item[1], reverse=True))
+print("\nCategorical variables sorted by chi-square association with MetSyn:")
+for col, chi2_val in cat_effects.items():
+    print(f"{col}: Chi-square = {chi2_val:.2f}")
+
+# Plot categorical variables
+for col in categorical_cols:
+    plt.figure(figsize=(8, 5))
+    counts = pd.crosstab(df[col], df["MetabolicSyndrome"])
+    counts.plot(kind='bar', stacked=True, figsize=(8,5))
+    plt.title(f"{col} by Metabolic Syndrome Status")
+    plt.xlabel(col)
+    plt.ylabel("Count")
+    plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir, f"count_{col}_by_MetabolicSyndrome.png"))
+    plt.show()
+
+# Summary 
+top_numeric = list(numeric_effects.keys())[0]
+top_categorical = list(cat_effects.keys())[0]
+
+print(f"\nMost relevant numeric factor: {top_numeric}")
+print(f"Most relevant categorical factor: {top_categorical}")
+
+print("\nFinished Question 4: analysis plots saved in 'figures/' and top factors identified.")
+
+# %% Question 5: Predict Metabolic Syndrome
+print("\n--- Question 5: Predicting Metabolic Syndrome ---")
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+
+# Separate features and target
+X = df.drop(columns=["MetabolicSyndrome"])
+y = df["MetabolicSyndrome"]
+
+# Encode categorical variables
+X = pd.get_dummies(X, drop_first=True)
+
+# Split data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train a simple Random Forest classifier
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluation of the model
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+# Plot top 10 features by importance
+feat_importances = pd.Series(model.feature_importances_, index=X.columns)
+feat_importances.sort_values(ascending=False).head(10).plot(kind='barh', figsize=(8, 5), color='skyblue')
+plt.title("Top 10 Features by Importance")
+plt.xlabel("Importance")
+plt.ylabel("Feature")
+plt.tight_layout()
+plt.savefig(os.path.join(fig_dir, "feature_importance.png"))
+plt.show()
+
+print("\nFinished Question 5: prediction model evaluated and feature importance plot saved in 'figures/'.")
