@@ -152,20 +152,6 @@ plt.tight_layout()
 plt.savefig(os.path.join(fig_dir, "correlation_matrix_biological_vars.png"))
 plt.show()
 
-# %% Additional analysis: Differences between patients with and without metabolic syndrome.
-print("\n--- Biological Variables by Metabolic Syndrome Status ---")
-print(df.groupby("MetabolicSyndrome")[bio_vars].describe().transpose())
-
-for var in bio_vars:
-    plt.figure(figsize=(8, 5))
-    sns.boxplot(data=df, x="MetabolicSyndrome", y=var, color="skyblue")
-    plt.title(f"{var} by Metabolic Syndrome Status")
-    plt.xlabel("Metabolic Syndrome Status")
-    plt.ylabel(var)
-    plt.tight_layout()
-    plt.savefig(os.path.join(fig_dir, f"box_{var}_by_MetabolicSyndrome.png"))
-    plt.show()
-
 print("\nFinished Question 3: interaction plots saved in 'figures/'")
 
 # %% Question 4: What factor is the most linked to metabolic syndrome?
@@ -262,15 +248,20 @@ print(classification_report(Y_test, Y_pred))
 print("\nConfusion Matrix:")
 print(confusion_matrix(Y_test, Y_pred))
 
-# Plot top 10 features by importance
+# %% Plot top 10 features by importance
 feat_importances = pd.Series(model.feature_importances_, index=X.columns)
 feat_importances.sort_values(ascending=False).head(10).plot(kind="barh", figsize=(8, 5), color="skyblue")
 plt.title("Top 10 Features by Importance")
 plt.xlabel("Importance")
 plt.ylabel("Feature")
+
+plt.gca().invert_yaxis()
+
 plt.tight_layout()
 plt.savefig(os.path.join(fig_dir, "feature_importance.png"))
 plt.show()
 
 print("\nFinished Question 5: prediction model evaluated and feature importance plot saved in 'figures/'.")
 print("\n--- End of Analysis ---")
+
+
