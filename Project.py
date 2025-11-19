@@ -222,7 +222,7 @@ print("\n--- Question 5: Predicting Metabolic Syndrome ---")
 
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, f1_score 
 
 # Separate features and target
 X = df.drop(columns=["MetabolicSyndrome"])
