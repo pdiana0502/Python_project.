@@ -220,7 +220,7 @@ print("\nFinished Question 4: analysis plots saved in 'figures/' and top factors
 # %% Question 5: Predict Metabolic Syndrome
 print("\n--- Question 5: Predicting Metabolic Syndrome ---")
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -247,6 +247,16 @@ print(classification_report(Y_test, Y_pred))
 
 print("\nConfusion Matrix:")
 print(confusion_matrix(Y_test, Y_pred))
+
+# Cross-validation could be added here for more robust evaluation
+cv_scores = cross_val_score(
+    model, X, Y,
+    cv=5,
+    scoring = "f1_macro"
+)
+
+print(f"\nCross-Validation F1 Macro Scores: {cv_scores}")
+print(f"Mean CV F1 Macro Score: {np.mean(cv_scores):.4f} ± {np.std(cv_scores):.4f}")
 
 # %% Plot top 10 features by importance
 feat_importances = pd.Series(model.feature_importances_, index=X.columns)
