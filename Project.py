@@ -26,9 +26,10 @@ plt.ylabel("Number of Patients")
 plt.xticks(ticks=[0, 1], labels=['No', 'Yes'], rotation=0)
 plt.tight_layout()
 plt.show()
-
+print("\nFinished Question 1")
 # %% Question 2: How are the different variables (age, gender, etc.) distributed?
 
+print("\n--- Question 2: Distributions of Variables ---")
 # create folder to save figures
 fig_dir = "figures"
 if not os.path.exists(fig_dir):
@@ -275,3 +276,5 @@ print("\nFinished Question 5: prediction model evaluated and feature importance 
 print("\n--- End of Analysis ---")
 
 
+
+# %%
